@@ -14,8 +14,8 @@ builder.Services.AddServerSideBlazor();
 builder.Services.AddSingleton<WeatherForecastService>();
 builder.Services.AddHttpClient();
 
-//builder.Services.AddScoped(sp => new HttpClient{BaseAddress = new Uri("https://localhost:7205")});
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(secretConfig["apiurl"]) });
+string apiUrl = Environment.GetEnvironmentVariable("apiurl");
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(apiUrl is null ? builder.Configuration.GetSection("AppSettings:apiurl").Value : apiUrl)});
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
 builder.Services.AddScoped<AuthService, AuthService>();
 builder.Services.AddScoped<UserService, UserService>();
