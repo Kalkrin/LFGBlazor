@@ -4,6 +4,9 @@ using LFGWebApp.Data;
 using LFGWebApp;
 
 var builder = WebApplication.CreateBuilder(args);
+var secretConfig = new ConfigurationBuilder()
+    .AddUserSecrets<Program>()
+    .Build();
 
 // Add services to the container.
 builder.Services.AddRazorPages();
@@ -12,7 +15,7 @@ builder.Services.AddSingleton<WeatherForecastService>();
 builder.Services.AddHttpClient();
 
 //builder.Services.AddScoped(sp => new HttpClient{BaseAddress = new Uri("https://localhost:7205")});
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://lfgapi.azure-api.net/v1/") });
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(secretConfig["apiurl"]) });
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
 builder.Services.AddScoped<AuthService, AuthService>();
 builder.Services.AddScoped<UserService, UserService>();
