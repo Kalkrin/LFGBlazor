@@ -1,0 +1,78 @@
+@page "/register"
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+
+<span>@message</span>
+<div class="container">
+    <form>
+        <EditForm Model="newUser" OnSubmit="RegisterUser">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <InputText class="form-control" id="username" @bind-Value="newUser.Username" />
+            </div>
+            <div class="form-group">
+                <label for="firstname">Firstname</label>
+                <InputText class="form-control" id="firstname" @bind-Value="newUser.FirstName" />
+            </div>
+            <div class="form-group">
+                <label for="lastname">Lastname</label>
+                <InputText class="form-control" id="lastname" @bind-Value="newUser.LastName" />
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <InputText class="form-control" id="email" @bind-Value="newUser.Email" />
+            </div>
+            <div class="form-group">
+                <label for="profilepicture">ProfilePicture</label>
+                <InputText class="form-control" id="profilepicture" @bind-Value="newUser.ProfilePicture" />
+            </div>
+            <div class="form-group">
+                <label for="bio">Bio</label>
+                <InputTextArea class="form-control" id="bio" @bind-Value="newUser.Bio" />
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <InputText class="form-control" id="password" @bind-Value="newUser.Password" type="password" />
+            </div>
+            <div class="form-group">
+                <label for="confirmpassword">Confirm Password</label>
+                <InputText class="form-control" id="confirmpassword" @bind-Value="confirmPassword" type="password" />
+            </div>
+            <br>
+            <button type="submit" class="btn btn-primary">Register</button>
+        </EditForm>
+    </form>
+</div>
+
+@code{
+    AddUserDto newUser = new AddUserDto();
+    string message = string.Empty;
+    string confirmPassword = string.Empty;
+
+    async void RegisterUser()
+    {
+        try
+        {
+            if(newUser.Password != confirmPassword)
+            {
+                throw new Exception("Password Mismatch");
+            }
+            var result = await AuthService.Register(newUser);
+            if(!result.Success)
+            {
+                if(result.Message is not null && result.Message != "")
+                    message = result.Message;
+                else
+                    message = "Bad data, try again";
+            }
+            else 
+            {
+                NavigationManager.NavigateTo("login");
+            }
+        } catch(Exception e)
+        {
+            message = e.Message;
+        }
+        
+    }
+}

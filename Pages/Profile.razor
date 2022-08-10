@@ -1,0 +1,45 @@
+@page "/profile"
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthStateProvider
+@inject UserService _UserService
+@attribute [Authorize]
+
+@if(user is null) 
+{
+    <span>@message</span>
+}
+else{
+    <h2>Hello @user.Username</h2>
+
+    <div class=container>
+        <div class="text-center">
+            <img src="@user.ProfilePicture" class="img-thumbnail rounded-circle" style="height:300px ; width:300px ;"/>
+            <p>@user.Bio</p>
+            <button @onclick="GoToEditProfile" class="btn btn-success">Edit Profile</button>
+        </div>
+    </div>
+}
+@code {
+    private PublicUserDto? user = null;
+    private string message;
+    protected override async Task OnInitializedAsync()
+    {
+        var authstate = await AuthStateProvider.GetAuthenticationStateAsync();
+
+        var currentUserId = authstate.User.Identities.First().Claims.FirstOrDefault(c => c.Type == "nameid").Value;
+        var result = await _UserService.GetUserById(Int32.Parse(currentUserId));
+        if(!result.Success)
+        {
+            message = result.Message;
+        }
+        else 
+        {
+            user = result.Data;
+        }
+    }
+
+    public void GoToEditProfile()
+    {
+        NavigationManager.NavigateTo($"editprofile/{user.Id}");
+    }
+}

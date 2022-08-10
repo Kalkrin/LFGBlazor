@@ -1,0 +1,57 @@
+﻿@page "/creategame"
+@inject GameService GameService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthStateProvider
+
+<container>
+    <h2>Create a game!</h2>
+    <form>
+        <EditForm Model="newGame" OnSubmit="HandleCreate">
+            <div class="form-group">
+                <label for="name">Name</label>
+                <InputText class="form-control" id="name" @bind-Value="newGame.Name"></InputText>
+            </div>
+            <div class="form-group">
+                <label for="description">Description</label>
+                <InputTextArea class="form-control" id="description" @bind-Value="newGame.Description"></InputTextArea>
+            </div>
+            <div class="form-group">
+                <label for="thumbnail">Thumbnail(URL)</label>
+                <InputText class="form-control" id="thumbnail" @bind-Value="newGame.Thumbnail"></InputText>
+            </div>
+            <br />
+            <button type="submit" class="btn btn-primary">Create Game</button>
+        </EditForm>
+    </form>
+</container>
+
+@code
+{
+    AddGameDto newGame = new AddGameDto();
+    string message = string.Empty;
+    int currentUserId = 0;
+    ServiceResponse<PublicGameDto> response = new ServiceResponse<PublicGameDto>();
+
+    async void HandleCreate()
+    {
+        try
+        {
+            var authstate = await AuthStateProvider.GetAuthenticationStateAsync();
+            currentUserId = int.Parse(authstate.User.Identities.First().Claims.FirstOrDefault(c => c.Type == "nameid").Value);
+
+            response = await GameService.CreateGame(newGame);
+            if(!response.Success)
+            {
+                message = response.Message;
+            }
+            else
+            {
+                NavigationManager.NavigateTo("/");
+            }
+        }
+        catch (Exception e)
+        {
+            message = e.Message;
+        }
+    }
+}

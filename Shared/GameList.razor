@@ -1,0 +1,96 @@
+@inject GameService GameService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthStateProvider
+
+@if(response.Data is null)
+{
+    <span>@message</span>
+}
+else
+{
+   <ul class="list-unstyled">
+    @foreach (PublicGameDto game in response.Data)
+    {
+        <li>
+            <div class="card mb-3">
+                <img src="@game.Thumbnail" class="card-img-top" />
+                <div class="card-body">
+                    <h5 class="card-title">@game.Name</h5>
+                    <p class="card-text">@game.Description</p>
+                    <p class="card-text"><span class="oi oi-person" aria-hidden="true"/>&nbsp; @game.Players.Count()</p>
+                        @if(currentUserId == game.Creator)
+                        {
+                            <button @onclick="HandleEdit" class="btn btn-warning">Edit Game</button>
+                            <button @onclick="() => HandleDelete(game.Id)" class="btn btn-danger">Delete Game</button>
+                        }
+                        @if(game.Players.Exists(p => p.Id == currentUserId) && currentUserId != game.Creator)
+                        {
+                            <button @onclick="HandleQuit" class="btn btn-danger">Leave Game</button>
+                        }
+                        @if(!game.Players.Exists(p => p.Id == currentUserId) && currentUserId != game.Creator)
+                        {
+                            <button @onclick="HandleRequest" class="btn btn-success">Request To Join</button>
+                        }
+               </div>
+            </div>
+        </li>
+    }
+    </ul> 
+}
+@code
+{
+    private ServiceResponse<List<PublicGameDto>> response = new ServiceResponse<List<PublicGameDto>>();
+    private string message = string.Empty;
+    private int currentUserId = 0;
+    public event Action GamesChanged;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var authstate = await AuthStateProvider.GetAuthenticationStateAsync();
+            currentUserId = int.Parse(authstate.User.Identities.First().Claims.FirstOrDefault(c => c.Type == "nameid").Value);
+
+            response = await GameService.GetAllGames();
+            if(!response.Success)
+            {
+                message = response.Message;
+            }
+        }
+        catch (Exception e)
+        {
+            message = e.Message;
+        }
+    }
+
+
+
+    void HandleRequest()
+    {
+
+    }
+
+    void HandleEdit()
+    {
+
+    }
+
+    void HandleDelete(int id)
+    {
+        try
+        {
+            GameService.DeleteGame(id);
+            response.Data.RemoveAll(g => g.Id == id);
+            StateHasChanged();
+        }
+        catch(Exception e)
+        {
+            message = e.Message;
+        }
+    }
+
+    void HandleQuit()
+    {
+        
+    }
+}

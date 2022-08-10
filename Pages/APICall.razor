@@ -1,0 +1,77 @@
+@page "/apicall"
+@inject IHttpClientFactory ClientFactory
+@inject HttpClient Http
+@inject AuthenticationStateProvider AuthStateProvider
+@inject UserService UserService
+
+<PageTitle>APICall</PageTitle>
+@* if(users == null)
+{
+    <span>@message</span>
+} *@
+<h1>Users</h1>
+<AuthorizeView>
+    <Authorized>
+        <table class="table">
+            <thead>
+
+                <tr>
+                    @foreach (var propertyInfo in new User().GetType().GetProperties())
+                    {
+                    
+                        <th>@propertyInfo.Name</th>
+                        
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (User user in users)
+                {
+                    <tr>
+                        @foreach (var propertyInfo in user.GetType().GetProperties())
+                        {
+                            <th>@propertyInfo.GetValue(user, null)</th>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table> 
+    </Authorized>
+    <NotAuthorized>
+        <p>Must be logged in to see users.</p>
+    </NotAuthorized>
+</AuthorizeView>
+
+
+@code{
+    private UserResponseObject uro = new UserResponseObject();
+    private IEnumerable<User> users = Array.Empty<User>();
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await Http.GetAsync("/User");
+        if(result.IsSuccessStatusCode)
+        {
+            uro = await result.Content.ReadFromJsonAsync<UserResponseObject>();
+            users = uro.Data;
+        }
+        
+    }
+    @* private List<User> users = null;
+    private string message;
+
+    private ServiceResponse<List<User>> result = new ServiceResponse<List<User>>(); 
+    protected override async Task OnInitializedAsync()
+    {
+        result = await UserService.GetUsers();
+
+        if(!result.Success)
+        {
+            users = result.Data;
+        }
+        else
+        {
+            message = result.Message;
+        }
+    } *@
+}
+

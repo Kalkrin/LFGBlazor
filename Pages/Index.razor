@@ -1,0 +1,27 @@
+﻿@page "/"
+@inject NavigationManager NavManager
+
+<PageTitle>Index</PageTitle>
+
+<h1>Games</h1>
+
+<container>
+    <AuthorizeView>
+    <Authorized>
+        <button class="btn btn-success" @onclick="HandleCreate">Create A Game!</button>
+        <br />
+        <GameList />
+    </Authorized>  
+    <NotAuthorized>
+        <p>Please login to see a list of Gurps Games!</p>
+    </NotAuthorized>  
+    </AuthorizeView>
+</container>
+
+
+@code {
+    void HandleCreate()
+    {
+        NavManager.NavigateTo("/creategame");
+    }
+}
