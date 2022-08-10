@@ -3,36 +3,66 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject UserService _UserService
 
-@if(existingUser is not null)
+@if(existingUser is not null && userIsAllowed)
 {
 <span>@message</span>
 <div class="container">
-    <form>
-        <EditForm Model="userToUpdate" OnSubmit="HandleUpdate">
-            <div class="form-group">
-                <label for="username">Username</label>
-                <InputText class="form-control" id="username" @bind-Value="existingUser.Username" />
-            </div>
-            <div class="form-group">
-                <label for="profilepicture">ProfilePicture</label>
-                <InputText class="form-control" id="profilepicture" @bind-Value="existingUser.ProfilePicture" />
-            </div>
-            <div class="form-group">
-                <label for="bio">Bio</label>
-                <InputTextArea class="form-control" id="bio" @bind-Value="existingUser.Bio" />
-            </div>
-            <div class="form-group">
-                <label for="password">Password</label>
-                <InputText class="form-control" id="password" @bind-Value="userToUpdate.Password" type="password" />
-            </div>
-            <div class="form-group">
-                <label for="confirmpassword">Confirm Password</label>
-                <InputText class="form-control" id="confirmpassword" @bind-Value="confirmPassword" type="password" />
-            </div>
-            <br>
-            <button type="submit" class="btn btn-primary">Update Profile</button>
-        </EditForm>
-    </form>
+    <EditForm Model="userToUpdate" OnValidSubmit="HandleProfileUpdate">
+        <DataAnnotationsValidator />
+        <div class="form-group">
+            <label for="username">Username</label>
+            <InputText class="form-control" id="username" @bind-Value="userToUpdate.Username" />
+            <ValidationMessage For="@(() => userToUpdate.Username)" />
+        </div>
+        <div class="form-group">
+            <label for="email">Email</label>
+            <InputText class="form-control" id="email" @bind-Value="userToUpdate.Email" type="email" />
+            <ValidationMessage For="@(() => userToUpdate.Email)" />
+        </div>
+        <div class="form-group">
+            <label for="firstname">First Name</label>
+            <InputText class="form-control" id="firstname" @bind-Value="userToUpdate.FirstName" />
+            <ValidationMessage For="@(() => userToUpdate.FirstName)" />
+        </div>
+        <div class="form-group">
+            <label for="lastname">Last Name</label>
+            <InputText class="form-control" id="lastname" @bind-Value="userToUpdate.LastName" />
+            <ValidationMessage For="@(() => userToUpdate.LastName)" />
+        </div>
+        <div class="form-group">
+            <label for="profilepicture">ProfilePicture</label>
+            <InputText class="form-control" id="profilepicture" @bind-Value="userToUpdate.ProfilePicture" />
+            <ValidationMessage For="@(() => userToUpdate.ProfilePicture)" />
+        </div>
+        <div class="form-group">
+            <label for="bio">Bio</label>
+            <InputTextArea class="form-control" id="bio" @bind-Value="userToUpdate.Bio" />
+            <ValidationMessage For="@(() => userToUpdate.Bio)" />
+        </div>
+        <br>
+        <button type="submit" class="btn btn-primary">Update Profile</button>
+    </EditForm>
+
+    <EditForm Model="updatePass" OnValidSubmit="HandlePasswordUpdate">
+        <DataAnnotationsValidator />
+        <div class="form-group">
+            <label for="password">Existing Password</label>
+            <InputText class="form-control" id="newpassword" @bind-Value="updatePass.ExistingPassword" type="password" />
+            <ValidationMessage For="@(() => updatePass.ExistingPassword)" />
+        </div>        
+        <div class="form-group">
+            <label for="password">New Password</label>
+            <InputText class="form-control" id="existingpassword" @bind-Value="updatePass.NewPassword" type="password" />
+            <ValidationMessage For="@(() => updatePass.NewPassword)" />
+        </div>
+        @*<div class="form-group">
+            <label for="confirmpassword">Confirm Password</label>
+            <InputText class="form-control" id="confirmpassword" @bind-Value="confirmPassword" type="password" />
+            <ValidationMessage For="@(() => updatePass.NewPassword)" />
+        </div>*@
+        <br>
+        <button type="submit" class="btn btn-primary">Update Password</button>
+    </EditForm>
 </div>
 }
 else
@@ -43,17 +73,30 @@ else
 @code{
     [Parameter]
     public int userId { get; set; }
+
     private UpdateUserDto userToUpdate = new UpdateUserDto();
+    private UpdateUserPasswordDto updatePass = new UpdateUserPasswordDto();
     private PublicUserDto existingUser = null;
     private string message;
-    
     private string confirmPassword;
+    bool userIsAllowed = false;
+    int currentUserId;
+
     protected override async Task OnInitializedAsync()
     {
         var authstate = await AuthStateProvider.GetAuthenticationStateAsync();
+        currentUserId = Int32.Parse(authstate.User.Identities.First().Claims.FirstOrDefault(c => c.Type == "nameid").Value);
+        if(currentUserId != userId)
+        {
+            message = "Can only edit your own profile";
+            return;
+        }
+        else
+        {
+            userIsAllowed = true;
+        }
 
-        var currentUserId = authstate.User.Identities.First().Claims.FirstOrDefault(c => c.Type == "nameid").Value;
-        var result = await _UserService.GetUserById(Int32.Parse(currentUserId));
+        var result = await _UserService.GetUserById(currentUserId);
         if(!result.Success)
         {
             message = result.Message;
@@ -62,36 +105,67 @@ else
         {
             existingUser = result.Data;
         }
+
+        userToUpdate.Email = existingUser.Email;
+        userToUpdate.FirstName = existingUser.FirstName;
+        userToUpdate.LastName = existingUser.LastName;
+        userToUpdate.Bio = existingUser.Bio;
+        userToUpdate.ProfilePicture = existingUser.ProfilePicture;
+        userToUpdate.Username = existingUser.Username;
     }
-    
-    async void HandleUpdate(){
-        try{
-            userToUpdate.Email = existingUser.Email;
-            userToUpdate.FirstName = existingUser.FirstName;
-            userToUpdate.LastName = existingUser.LastName;
-            userToUpdate.Bio = existingUser.Bio;
-            userToUpdate.ProfilePicture = existingUser.ProfilePicture;
-            userToUpdate.Username = existingUser.Username;
 
-            if(confirmPassword != userToUpdate.Password)
-            {
-                throw new Exception("badPassword");
-            }
-
+    async void HandleProfileUpdate()
+    {
+        try
+        {
             var result = await _UserService.UpdateUser(userId, userToUpdate);
             if(!result.Success)
             {
-                message = "Bad data, try again";
+                message = result.Message;
+                StateHasChanged();
             }
             else 
             {
                 NavigationManager.NavigateTo("profile");
             }
         } catch(Exception e){
-            if(e.Message == "badPassword")
-                message = "passwords do not match";
-            
-            message = "Bad data, try again";
+            message = e.Message;
+            StateHasChanged();
+        }
+    }
+
+    async void HandlePasswordUpdate()
+    {
+        try
+        {
+            //if(confirmPassword != updatePass.NewPassword)
+            //{
+            //    throw new Exception("badPassword");
+            //}
+            var result = await _UserService.UpdateUserPassword(userId, updatePass);
+            if(!result.Success)
+            {
+                message = result.Message;
+            }
+            else 
+            {
+                message = "Password updated!";
+                var passResult = await _UserService.GetUserById(currentUserId);
+                if(!passResult.Success)
+                {
+                    message = passResult.Message;
+                }
+                else 
+                {
+                    existingUser = passResult.Data;
+                }
+            }
+            StateHasChanged();
+        }
+        catch (Exception e)
+        {
+            message = e.Message;
+            StateHasChanged();
         }
     }
 }

@@ -17,20 +17,26 @@ else
                 <div class="card-body">
                     <h5 class="card-title">@game.Name</h5>
                     <p class="card-text">@game.Description</p>
+                    <p class="card-text text-muted">GM: @game.Players.FirstOrDefault(p => p.Id == game.Creator).Username</p>
+                    <p class="card-text text-muted">Created: @String.Format("{0:MM/dd/yyyy}", game.CreatedAt)</p>
                     <p class="card-text"><span class="oi oi-person" aria-hidden="true"/>&nbsp; @game.Players.Count()</p>
-                        @if(currentUserId == game.Creator)
-                        {
-                            <button @onclick="HandleEdit" class="btn btn-warning">Edit Game</button>
-                            <button @onclick="() => HandleDelete(game.Id)" class="btn btn-danger">Delete Game</button>
-                        }
-                        @if(game.Players.Exists(p => p.Id == currentUserId) && currentUserId != game.Creator)
-                        {
-                            <button @onclick="HandleQuit" class="btn btn-danger">Leave Game</button>
-                        }
-                        @if(!game.Players.Exists(p => p.Id == currentUserId) && currentUserId != game.Creator)
-                        {
-                            <button @onclick="HandleRequest" class="btn btn-success">Request To Join</button>
-                        }
+                    <AuthorizeView>
+                        <Authorized>
+                            @if(currentUserId == game.Creator)
+                            {
+                                <button @onclick="HandleEdit" class="btn btn-warning">Edit Game</button>
+                                <button @onclick="() => HandleDelete(game.Id)" class="btn btn-danger">Delete Game</button>
+                            }
+                            @if(game.Players.Exists(p => p.Id == currentUserId) && currentUserId != game.Creator)
+                            {
+                                <button @onclick="HandleQuit" class="btn btn-danger">Leave Game</button>
+                            }
+                            @if(!game.Players.Exists(p => p.Id == currentUserId) && currentUserId != game.Creator)
+                            {
+                                <button @onclick="HandleRequest" class="btn btn-success">Request To Join</button>
+                            }
+                        </Authorized>
+                    </AuthorizeView>
                </div>
             </div>
         </li>
@@ -42,14 +48,15 @@ else
     private ServiceResponse<List<PublicGameDto>> response = new ServiceResponse<List<PublicGameDto>>();
     private string message = string.Empty;
     private int currentUserId = 0;
-    public event Action GamesChanged;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
             var authstate = await AuthStateProvider.GetAuthenticationStateAsync();
-            currentUserId = int.Parse(authstate.User.Identities.First().Claims.FirstOrDefault(c => c.Type == "nameid").Value);
+            //currentUserId = int.Parse(authstate.User.Identities.First().Claims.FirstOrDefault(c => c.Type == "nameid").Value);
+            if(authstate.User.Identities.First().Claims.Count() > 0)
+                int.TryParse(authstate.User.Identities.First().Claims.FirstOrDefault(c => c.Type == "nameid").Value, out currentUserId);
 
             response = await GameService.GetAllGames();
             if(!response.Success)

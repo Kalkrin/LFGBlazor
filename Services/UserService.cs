@@ -26,5 +26,11 @@ namespace LFGWebApp
             var result = await _http.PutAsJsonAsync($"User/UpdateUser/{id}", request);
             return await result.Content.ReadFromJsonAsync<ServiceResponse<PublicUserDto>>();
         }
+
+        public async Task<ServiceResponse<PublicUserDto>> UpdateUserPassword(int id, UpdateUserPasswordDto request)
+        {
+            var result = await _http.PutAsJsonAsync($"User/UpdateUserPassword/{id}", request);
+            return await result.Content.ReadFromJsonAsync<ServiceResponse<PublicUserDto>>();
+        }
     }
 }
