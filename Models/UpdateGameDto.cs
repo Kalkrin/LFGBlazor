@@ -2,7 +2,7 @@
 
 namespace LFGWebApp
 {
-    public class AddGameDto
+    public class UpdateGameDto
     {
         [Required, MaxLength(50), MinLength(5)]
         public string Name { get; set; }
@@ -10,5 +10,7 @@ namespace LFGWebApp
         public string Description { get; set; }
         [Required, Url, MaxLength(500)]
         public string Thumbnail { get; set; }
+        public List<int> PlayersToAdd { get; set; }
+        public List<int> PlayersToRemove { get; set; }
     }
 }

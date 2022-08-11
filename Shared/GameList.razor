@@ -24,7 +24,7 @@ else
                         <Authorized>
                             @if(currentUserId == game.Creator)
                             {
-                                <button @onclick="HandleEdit" class="btn btn-warning">Edit Game</button>
+                                <button @onclick="() => HandleEdit(game.Id)" class="btn btn-warning">Edit Game</button>
                                 <button @onclick="() => HandleDelete(game.Id)" class="btn btn-danger">Delete Game</button>
                             }
                             @if(game.Players.Exists(p => p.Id == currentUserId) && currentUserId != game.Creator)
@@ -77,9 +77,9 @@ else
 
     }
 
-    void HandleEdit()
+    void HandleEdit(int id)
     {
-
+        NavigationManager.NavigateTo($"editgame/{id}");
     }
 
     void HandleDelete(int id)

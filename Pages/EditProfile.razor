@@ -2,6 +2,7 @@
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthStateProvider
 @inject UserService _UserService
+@attribute [Authorize]
 
 @if(existingUser is not null && userIsAllowed)
 {
@@ -77,8 +78,8 @@ else
     private UpdateUserDto userToUpdate = new UpdateUserDto();
     private UpdateUserPasswordDto updatePass = new UpdateUserPasswordDto();
     private PublicUserDto existingUser = null;
-    private string message;
-    private string confirmPassword;
+    private string message = string.Empty;
+    private string confirmPassword = string.Empty;
     bool userIsAllowed = false;
     int currentUserId;
 
@@ -122,7 +123,7 @@ else
             if(!result.Success)
             {
                 message = result.Message;
-                StateHasChanged();
+                return;
             }
             else 
             {
@@ -130,7 +131,6 @@ else
             }
         } catch(Exception e){
             message = e.Message;
-            StateHasChanged();
         }
     }
 
@@ -142,30 +142,29 @@ else
             //{
             //    throw new Exception("badPassword");
             //}
-            var result = await _UserService.UpdateUserPassword(userId, updatePass);
-            if(!result.Success)
+            var passResult = await _UserService.UpdateUserPassword(userId, updatePass);
+            if(!passResult.Success)
             {
-                message = result.Message;
+                message = passResult.Message;
             }
             else 
             {
                 message = "Password updated!";
-                var passResult = await _UserService.GetUserById(currentUserId);
-                if(!passResult.Success)
+                var result = await _UserService.GetUserById(currentUserId);
+                if(!result.Success)
                 {
-                    message = passResult.Message;
+                    message = result.Message;
+                    return;
                 }
                 else 
                 {
-                    existingUser = passResult.Data;
+                    existingUser = result.Data;
                 }
             }
-            StateHasChanged();
         }
         catch (Exception e)
         {
             message = e.Message;
-            StateHasChanged();
         }
     }
 }

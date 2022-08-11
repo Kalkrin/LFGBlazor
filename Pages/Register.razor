@@ -5,39 +5,47 @@
 <span>@message</span>
 <div class="container">
     <form>
-        <EditForm Model="newUser" OnSubmit="RegisterUser">
+        <EditForm Model="newUser" OnValidSubmit="RegisterUser">
+            <DataAnnotationsValidator />
             <div class="form-group">
                 <label for="username">Username</label>
                 <InputText class="form-control" id="username" @bind-Value="newUser.Username" />
+                <ValidationMessage For="@(() => newUser.Username)" />
             </div>
             <div class="form-group">
                 <label for="firstname">Firstname</label>
                 <InputText class="form-control" id="firstname" @bind-Value="newUser.FirstName" />
+                <ValidationMessage For="@(() => newUser.FirstName)" />
             </div>
             <div class="form-group">
                 <label for="lastname">Lastname</label>
                 <InputText class="form-control" id="lastname" @bind-Value="newUser.LastName" />
+                <ValidationMessage For="@(() => newUser.LastName)" />
             </div>
             <div class="form-group">
                 <label for="email">Email</label>
                 <InputText class="form-control" id="email" @bind-Value="newUser.Email" />
+                <ValidationMessage For="@(() => newUser.Email)" />
             </div>
             <div class="form-group">
-                <label for="profilepicture">ProfilePicture</label>
+                <label for="profilepicture">ProfilePicture (URL)</label>
                 <InputText class="form-control" id="profilepicture" @bind-Value="newUser.ProfilePicture" />
+                <ValidationMessage For="@(() => newUser.ProfilePicture)" />
             </div>
             <div class="form-group">
                 <label for="bio">Bio</label>
                 <InputTextArea class="form-control" id="bio" @bind-Value="newUser.Bio" />
+                <ValidationMessage For="@(() => newUser.Bio)" />
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
                 <InputText class="form-control" id="password" @bind-Value="newUser.Password" type="password" />
+                <ValidationMessage For="@(() => newUser.Password)" />
             </div>
-            <div class="form-group">
+            @*<div class="form-group">
                 <label for="confirmpassword">Confirm Password</label>
                 <InputText class="form-control" id="confirmpassword" @bind-Value="confirmPassword" type="password" />
-            </div>
+            </div>*@
             <br>
             <button type="submit" class="btn btn-primary">Register</button>
         </EditForm>
@@ -53,10 +61,10 @@
     {
         try
         {
-            if(newUser.Password != confirmPassword)
-            {
-                throw new Exception("Password Mismatch");
-            }
+            //if(newUser.Password != confirmPassword)
+            //{
+            //    throw new Exception("Password Mismatch");
+            //}
             var result = await AuthService.Register(newUser);
             if(!result.Success)
             {

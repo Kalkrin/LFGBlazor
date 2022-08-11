@@ -1,0 +1,119 @@
+﻿@page "/editgame/{gameid:int}"
+@inject GameService GameService
+@inject AuthenticationStateProvider AuthStateProvider
+@attribute [Authorize]
+
+@if(updateGameDto is not null && userBelogs)
+{
+<container>
+    <h2>Edit your game!</h2>
+    <p>@message</p>
+    <EditForm Model="updateGameDto" OnValidSubmit="HandleEdit">
+        <DataAnnotationsValidator />
+        <div class="form-group">
+            <label for="name">Name</label>
+            <InputText class="form-control" id="name" @bind-Value="updateGameDto.Name"></InputText>
+            <ValidationMessage For=@(() => updateGameDto.Name) />
+            </div>
+        <div class="form-group">
+            <label for="description">Description</label>
+            <InputTextArea class="form-control" id="description" @bind-Value="updateGameDto.Description"></InputTextArea>
+            <ValidationMessage For=@(() => updateGameDto.Description) />
+        </div>
+        <div class="form-group">
+            <label for="thumbnail">Thumbnail(URL)</label>
+            <InputText class="form-control" id="thumbnail" @bind-Value="updateGameDto.Thumbnail"></InputText>
+            <ValidationMessage For=@(() => updateGameDto.Thumbnail) />
+        </div>
+        <br />
+        <button type="submit" class="btn btn-primary">Edit Game</button>
+    </EditForm>
+    </container>
+}
+else
+{
+    <p>@message</p>
+}
+
+@code
+{
+    [Parameter]
+    public int gameid{ get; set; }
+
+    private UpdateGameDto updateGameDto = new UpdateGameDto
+        {
+            PlayersToAdd = new List<int>(),
+            PlayersToRemove = new List<int>()
+        };
+    private int currentUserId = 0;
+    private string message = string.Empty;
+    private bool userBelogs = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var authstate = await AuthStateProvider.GetAuthenticationStateAsync();
+            currentUserId = int.Parse(authstate.User.Identities.First().Claims.FirstOrDefault(c => c.Type == "nameid").Value);
+
+            var result = await GameService.GetGame(gameid);
+            if(!result.Success)
+            {
+                message = result.Message;
+                return;
+            }
+
+            if(result.Data is not null && currentUserId != result.Data.Creator)
+            {
+                message = "Game must belong to you to edit it!";
+                return;
+            }
+            else
+            {
+                userBelogs = true;
+            }
+
+            if (result.Data is not null)
+            {
+                updateGameDto.Name = result.Data.Name;
+                updateGameDto.Description = result.Data.Description;
+                updateGameDto.Thumbnail = result.Data.Thumbnail;
+            }
+        }
+        catch (Exception e)
+        {
+            message = e.Message;
+        }
+
+    }
+
+    async void HandleEdit()
+    {
+        try
+        {
+            var result = await GameService.EditGame(updateGameDto, gameid);
+            if(!result.Success)
+            {
+                message = result.Message;
+                StateHasChanged();
+                return;
+            }
+
+            if(result.Data is not null)
+            {
+                updateGameDto.Name = result.Data.Name;
+                updateGameDto.Description = result.Data.Description;
+                updateGameDto.Thumbnail = result.Data.Thumbnail;
+
+                message = "Game Updated!";
+
+                StateHasChanged();
+            }
+        }
+        catch(Exception e)
+        {
+            message = e.Message;
+        }
+        
+    }
+}

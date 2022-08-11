@@ -15,9 +15,21 @@ namespace LFGWebApp
             return result;
         }
 
+        public async Task<ServiceResponse<PublicGameDto>> GetGame(int gameId)
+        {
+            var result = await _http.GetFromJsonAsync<ServiceResponse<PublicGameDto>>($"Game/GetById/{gameId}");
+            return result;
+        }
+
         public async Task<ServiceResponse<PublicGameDto>> CreateGame(AddGameDto request)
         {
             var result = await _http.PostAsJsonAsync($"Game", request);
+            return await result.Content.ReadFromJsonAsync<ServiceResponse<PublicGameDto>>();
+        }
+
+        public async Task<ServiceResponse<PublicGameDto>> EditGame(UpdateGameDto addGame, int id)
+        {
+            var result = await _http.PutAsJsonAsync($"Game/UpdateGame/{id}", addGame);
             return await result.Content.ReadFromJsonAsync<ServiceResponse<PublicGameDto>>();
         }
 

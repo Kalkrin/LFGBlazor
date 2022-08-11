@@ -6,7 +6,7 @@ namespace LFGWebApp
     {
         [Required]
         public string ExistingPassword { get; set; }
-        [Required]
+        [Required, MaxLength(50), MinLength(5)]
         public string NewPassword { get; set; }
     }
 }

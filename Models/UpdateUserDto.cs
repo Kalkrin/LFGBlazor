@@ -2,18 +2,18 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LFGWebApp{
     public class UpdateUserDto  
-    { 
-        [Required]
+    {
+        [Required, MaxLength(50), MinLength(5)]
         public string Username { get; set; }
-        [Required]
+        [Required, EmailAddress,]
         public string Email { get; set; }
-        [Required]
+        [Required, MaxLength(50)]
         public string FirstName { get; set; }
-        [Required]
+        [Required, MaxLength(50)]
         public string LastName { get; set; }
-        [Required]
-        public string ProfilePicture { get; set; }
-        [Required]
+        [Required, MaxLength(5000)]
         public string Bio { get; set; }
+        [Required, MaxLength(500), Url]
+        public string ProfilePicture { get; set; }
     }
 }
