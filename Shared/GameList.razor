@@ -1,4 +1,5 @@
 @inject GameService GameService
+@inject RequestService RequestService
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthStateProvider
 
@@ -29,11 +30,19 @@ else
                             }
                             @if(game.Players.Exists(p => p.Id == currentUserId) && currentUserId != game.Creator)
                             {
-                                <button @onclick="HandleQuit" class="btn btn-danger">Leave Game</button>
+                                <button @onclick="() => HandleQuit(game.Id)" class="btn btn-danger">Leave Game</button>
                             }
                             @if(!game.Players.Exists(p => p.Id == currentUserId) && currentUserId != game.Creator)
                             {
-                                <button @onclick="HandleRequest" class="btn btn-success">Request To Join</button>
+                                @if(reqResponce.Data.Exists(r => r.Game.Id == game.Id && r.Status == Status.Undecided))
+                                {
+                                    <button class="btn btn-success" disabled="true">Request Pending..</button>
+                                }
+                                else
+                                {
+                                    <button @onclick="() => HandleRequest(game.Id)" class="btn btn-success">Request To Join</button>    
+                                }
+                                
                             }
                         </Authorized>
                     </AuthorizeView>
@@ -46,6 +55,7 @@ else
 @code
 {
     private ServiceResponse<List<PublicGameDto>> response = new ServiceResponse<List<PublicGameDto>>();
+    private ServiceResponse<List<PublicRequestDto>> reqResponce = new ServiceResponse<List<PublicRequestDto>>();
     private string message = string.Empty;
     private int currentUserId = 0;
 
@@ -54,7 +64,6 @@ else
         try
         {
             var authstate = await AuthStateProvider.GetAuthenticationStateAsync();
-            //currentUserId = int.Parse(authstate.User.Identities.First().Claims.FirstOrDefault(c => c.Type == "nameid").Value);
             if(authstate.User.Identities.First().Claims.Count() > 0)
                 int.TryParse(authstate.User.Identities.First().Claims.FirstOrDefault(c => c.Type == "nameid").Value, out currentUserId);
 
@@ -62,6 +71,13 @@ else
             if(!response.Success)
             {
                 message = response.Message;
+                return;
+            }
+
+            if(currentUserId > 0)
+            {
+                reqResponce = await RequestService.GetRequestByUserId(currentUserId);
+
             }
         }
         catch (Exception e)
@@ -72,8 +88,31 @@ else
 
 
 
-    void HandleRequest()
+    async void HandleRequest(int gameId)
     {
+        AddRequestDto addRequest = new AddRequestDto
+            {
+                GameId = gameId
+            };
+        try
+        {
+            var result = await RequestService.CreateRequest(addRequest);
+
+            if(!result.Success)
+            {
+                message = result.Message;
+                return;
+            }
+            else
+            {
+                message = result.Message;
+                reqResponce.Data.Add(result.Data);
+                StateHasChanged();
+            }
+        } catch (Exception e)
+        {
+            message = e.Message;
+        }
 
     }
 
@@ -96,8 +135,40 @@ else
         }
     }
 
-    void HandleQuit()
+    async void HandleQuit(int gameId)
     {
-        
+        try
+        {
+            PublicGameDto gameToUpdate = response.Data.FirstOrDefault(g => g.Id == gameId);
+
+            UpdateGameDto updateGameDto = new UpdateGameDto
+                {
+                    Name = gameToUpdate.Name,
+                    Description = gameToUpdate.Description,
+                    Thumbnail = gameToUpdate.Thumbnail,
+                    PlayersToAdd = new List<int>(),
+                    PlayersToRemove = new List<int>
+                        {
+                            currentUserId
+                        }
+                };
+
+                var result = await GameService.EditGame(updateGameDto, gameId);
+                if(!result.Success)
+                {
+                    message = result.Message;
+                    return;
+                }
+
+                if(result.Data is not null)
+                {
+                    response.Data.FirstOrDefault(g => g.Id == gameId).Players.RemoveAll(p => p.Id == currentUserId);
+                    StateHasChanged();
+                }
+            }
+            catch(Exception e)
+            {
+                message = e.Message;
+            }
     }
 }

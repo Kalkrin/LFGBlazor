@@ -5,6 +5,7 @@
 @inject ILocalStorageService LocalStorage
 @inject NavigationManager NavManager
 @inject AuthService AuthService
+@inject RequestService RequestService
 
 
 <div class="container">
@@ -36,6 +37,8 @@
     private string returnUrl = string.Empty;
     private UserLoginDto user = new UserLoginDto();
     ServiceResponse<string> result = new ServiceResponse<string>();
+    private ServiceResponse<List<PublicRequestDto>> reqResponce = new ServiceResponse<List<PublicRequestDto>>();
+    private int currentUserId = 0;
 
     protected override void OnInitialized()
     {
@@ -51,7 +54,14 @@
         if(result.Success)
         {
             await LocalStorage.SetItemAsync("token", result.Data);
-            await AuthStateProvider.GetAuthenticationStateAsync();
+            var authstate = await AuthStateProvider.GetAuthenticationStateAsync();
+
+            if(authstate.User.Identities.First().Claims.Count() > 0)
+                int.TryParse(authstate.User.Identities.First().Claims.FirstOrDefault(c => c.Type == "nameid").Value, out currentUserId);
+
+            reqResponce = await RequestService.GetRequestForCreator(currentUserId);
+            RequestService.SetCount(reqResponce.Data.Where(r => r.Status == Status.Undecided).Count());
+            
             NavManager.NavigateTo(returnUrl);
         }
         else

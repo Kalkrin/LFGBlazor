@@ -1,0 +1,121 @@
+﻿@page "/requests"
+@inject RequestService RequestService
+@inject GameService GameService
+@inject AuthenticationStateProvider AuthStateProvider
+@attribute [Authorize]
+
+<span>@message</span>
+@if(response.Data is not null)
+{
+    <div class="container">
+        <ul>
+            @foreach(PublicRequestDto request in response.Data.Where(r => r.Status == Status.Undecided))
+            {
+                <li class="list-group-item justify-content-between align-items-center">
+                    Requestor: @request.Requestor.Username
+                    <br />
+                    @request.Message
+                    <br />
+                    <p class="text-muted">Created: @request.Created</p>
+                    <button @onclick="() => HandleAccept(request.Id)" class="btn btn-success">Accept</button>
+                    <button @onclick="() => HandleDecline(request.Id)" class="btn btn-danger">Decline</button>
+                  </li>
+            }
+        </ul>
+    </div>
+}
+
+@code
+{
+    private int currentUserId = 0;
+    private ServiceResponse<List<PublicRequestDto>> response = new ServiceResponse<List<PublicRequestDto>>();
+    private ServiceResponse<PublicRequestDto> updateResponse = new ServiceResponse<PublicRequestDto>();
+    private string message = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var authstate = await AuthStateProvider.GetAuthenticationStateAsync();
+            if(authstate.User.Identities.First().Claims.Count() > 0)
+                int.TryParse(authstate.User.Identities.First().Claims.FirstOrDefault(c => c.Type == "nameid").Value, out currentUserId);
+
+            if(currentUserId > 0)
+            {
+                response = await RequestService.GetRequestForCreator(currentUserId);
+
+                if (response.Data is not null && response.Data.Where(r => r.Status == Status.Undecided).Count() <= 0)
+                    message = "No new requests";
+            }
+        } catch(Exception e)
+        {
+            message = e.Message;
+        }
+    }
+
+    async void HandleAccept(int reqId)
+    {
+        try
+        {
+            AcceptDeclineRequestDto ad = new AcceptDeclineRequestDto
+                {
+                    status = Status.Approved
+                };
+            updateResponse = await RequestService.ApproveDenyRequest(ad, reqId);
+
+            if (!updateResponse.Success)
+            {
+                message = updateResponse.Message;
+                return;
+            }
+
+            response.Data.FirstOrDefault(r => r.Id == reqId).Status = Status.Approved;
+            StateHasChanged();
+            RequestService.DecreaseCount();
+            PublicGameDto gameToAddPlayersTo = response.Data.FirstOrDefault(r => r.Id == reqId).Game;
+
+            UpdateGameDto updatedGame = new UpdateGameDto
+                {
+                    Description = gameToAddPlayersTo.Description,
+                    Name = gameToAddPlayersTo.Name,
+                    Thumbnail = gameToAddPlayersTo.Thumbnail,
+                    PlayersToAdd = new List<int>
+                    {
+                        response.Data.FirstOrDefault(r => r.Id == reqId).Requestor.Id
+                    },
+                    PlayersToRemove = new List<int>()
+                };
+
+            await GameService.EditGame(updatedGame, gameToAddPlayersTo.Id);
+
+        } catch(Exception e)
+        {
+            message = e.Message;
+        }
+    }
+
+    async void HandleDecline(int reqId)
+    {
+        try
+        {
+            AcceptDeclineRequestDto ad = new AcceptDeclineRequestDto
+                {
+                    status = Status.Declined
+                };
+            updateResponse = await RequestService.ApproveDenyRequest(ad, reqId);
+
+            if (!updateResponse.Success)
+            {
+                message = updateResponse.Message;
+                return;
+            }
+
+            response.Data.FirstOrDefault(r => r.Id == reqId).Status = Status.Declined;
+            StateHasChanged();
+            RequestService.DecreaseCount();
+        }catch(Exception e)
+        {
+            message = e.Message;
+        }
+    }
+}

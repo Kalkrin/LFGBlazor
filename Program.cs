@@ -20,6 +20,7 @@ builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>
 builder.Services.AddScoped<AuthService, AuthService>();
 builder.Services.AddScoped<UserService, UserService>();
 builder.Services.AddScoped<GameService, GameService>();
+builder.Services.AddScoped<RequestService, RequestService>();
 builder.Services.AddAuthorizationCore();
 builder.Services.AddBlazoredLocalStorage();
 

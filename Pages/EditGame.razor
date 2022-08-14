@@ -95,7 +95,6 @@ else
             if(!result.Success)
             {
                 message = result.Message;
-                StateHasChanged();
                 return;
             }
 
@@ -104,8 +103,6 @@ else
                 updateGameDto.Name = result.Data.Name;
                 updateGameDto.Description = result.Data.Description;
                 updateGameDto.Thumbnail = result.Data.Thumbnail;
-
-                message = "Game Updated!";
 
                 StateHasChanged();
             }
